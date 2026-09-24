@@ -1,0 +1,54 @@
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+
+const COLORS = ['#2563EB', '#3FB950', '#D29922', '#F85149', '#8B5CF6', '#06B6D4']
+const fmt = (v) => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}K` : v
+
+export default function InlineChart({ chart }) {
+  if (!chart || !chart.labels?.length) return null
+  const data = chart.labels.map((label, i) => ({ name: label, value: chart.values[i] ?? 0 }))
+
+  return (
+    <div className="mt-3 bg-[#0D1117] rounded-lg p-3 border border-[#21262D]">
+      <p className="text-[10px] font-mono text-[#7D8590] uppercase tracking-widest mb-3">{chart.title}</p>
+
+      {chart.type === 'bar' && (
+        <ResponsiveContainer width="100%" height={160}>
+          <BarChart data={data} margin={{ top: 4, right: 8, bottom: 20, left: 8 }}>
+            <XAxis dataKey="name" tick={{ fill: '#7D8590', fontSize: 9 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: '#7D8590', fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={fmt} width={48} />
+            <Tooltip contentStyle={{ background: '#161B22', border: '1px solid #21262D', borderRadius: 6, fontSize: 11 }}
+              formatter={(v) => [fmt(v), 'Value']} labelStyle={{ color: '#E6EDF3' }} />
+            <Bar dataKey="value" fill="#2563EB" radius={[3, 3, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+
+      {chart.type === 'line' && (
+        <ResponsiveContainer width="100%" height={160}>
+          <LineChart data={data} margin={{ top: 4, right: 8, bottom: 20, left: 8 }}>
+            <XAxis dataKey="name" tick={{ fill: '#7D8590', fontSize: 9 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: '#7D8590', fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={fmt} width={48} />
+            <Tooltip contentStyle={{ background: '#161B22', border: '1px solid #21262D', borderRadius: 6, fontSize: 11 }}
+              formatter={(v) => [fmt(v), 'Value']} labelStyle={{ color: '#E6EDF3' }} />
+            <Line type="monotone" dataKey="value" stroke="#2563EB" strokeWidth={2} dot={{ fill: '#2563EB', r: 3 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+
+      {chart.type === 'pie' && (
+        <ResponsiveContainer width="100%" height={160}>
+          <PieChart>
+            <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60}
+              label={({ name, percent }) => `${name} ${(percent*100).toFixed(0)}%`} labelLine={false}
+              style={{ fontSize: 9, fill: '#7D8590' }}>
+              {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+            </Pie>
+            <Tooltip contentStyle={{ background: '#161B22', border: '1px solid #21262D', borderRadius: 6, fontSize: 11 }}
+              formatter={(v) => [fmt(v)]} labelStyle={{ color: '#E6EDF3' }} />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  )
+}
+
