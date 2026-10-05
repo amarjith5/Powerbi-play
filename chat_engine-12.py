@@ -4,10 +4,21 @@ structured response generation + critic loop + numeric fact-check
 """
 import asyncio
 import json
+import os
 import re
 from llm_client import LLMClient
 from powerbi_client import PowerBIClient, DAX_TABLE_MAP, query_tickets, query_orders
 from models import ChatRequest, ChatResponse, ChartData, IntentType
+
+# Debug prints throughout this file can include real user questions, LLM
+# answers, and raw model output — fine against mock data, but once this
+# runs against a real (confidential) dataset those are genuine business
+# data and must not land unconditionally in server logs, which are often
+# retained longer and accessed by more people than the data itself. Content
+# -revealing debug prints are gated behind this flag, which defaults OFF;
+# set BISYNC_DEBUG=1 locally when you actually need to see question/answer/
+# raw-response content while debugging a parsing or extraction issue.
+_DEBUG = os.getenv("BISYNC_DEBUG", "").lower() in ("1", "true", "yes")
 
 # NOTE: this used to fall back to the `json_repair` library on malformed
 # JSON. Removed deliberately (see _parse_json_response) — repair was
@@ -18,6 +29,78 @@ from models import ChatRequest, ChatResponse, ChartData, IntentType
 
 llm = LLMClient()
 pbi = PowerBIClient()
+
+# Fields considered identity/business-sensitive per table: real people's
+# names and vendor/company names. These are masked before any record ever
+# reaches the LLM (see _mask_records_for_llm below) — the LLM only needs to
+# reason about PATTERNS across them ("3 tickets from the same requester"),
+# not the real identities, to answer almost any question this app handles.
+# Status/Priority/Category/dates/amounts/IDs are left as-is since they're
+# usually the actual point of the question and are lower-sensitivity.
+# Review and adjust this list for what's actually confidential in your org
+# — this is a reasonable default, not a guarantee of what must be hidden.
+_SENSITIVE_FIELDS_BY_TABLE = {
+    "ServiceCentralTickets": {"CreatedBy", "RequestedBy"},
+    "OrderInvoiceProcessing": {"Vendor"},
+}
+
+
+def _mask_records_for_llm(records: list[dict], table: str) -> tuple[list[dict], dict[str, str]]:
+    """
+    Return (masked_records, reverse_map). masked_records has sensitive
+    fields replaced by stable, per-request pseudonyms (e.g. "Person_1",
+    "Person_2") instead of real names — stable within one call so counting/
+    grouping questions ("how many tickets from the same requester") still
+    work correctly, since the LLM sees that two rows share an identity, just
+    not which real person it is. reverse_map is {pseudonym: real_value},
+    used by _unmask_text to put the real name back into the LLM's answer
+    text afterwards (see generate_response) — the user still needs to see
+    the real name, only the LLM itself shouldn't.
+    This ONLY affects what's sent to the LLM; the real, unmasked records
+    still go back to the user's own browser via ChatResponse.records (see
+    the records=records assignment below), since that's the user's own
+    data returning to their own screen, not a third party.
+    """
+    sensitive = _SENSITIVE_FIELDS_BY_TABLE.get(table, set())
+    if not sensitive or not records:
+        return records, {}
+
+    masked = []
+    seen: dict[str, dict[str, str]] = {}
+    for row in records:
+        new_row = dict(row)
+        for field in sensitive:
+            value = new_row.get(field)
+            if value in (None, ""):
+                continue
+            field_map = seen.setdefault(field, {})
+            if value not in field_map:
+                field_map[value] = f"{field}_{len(field_map) + 1}"
+            new_row[field] = field_map[value]
+        masked.append(new_row)
+
+    reverse_map = {
+        pseudonym: real_value
+        for field_map in seen.values()
+        for real_value, pseudonym in field_map.items()
+    }
+    return masked, reverse_map
+
+
+def _unmask_text(text: str, reverse_map: dict[str, str]) -> str:
+    """
+    Replace any pseudonym the LLM may have echoed back in its answer/
+    follow-up text (e.g. "RequestedBy_1") with the real value, so the user
+    — who IS allowed to see it — gets the real name even though the LLM
+    never did. Matches are whole-token only (\\b...\\b) and pseudonyms are
+    substituted longest-first as a belt-and-suspenders guard against one
+    pseudonym being a prefix of another (e.g. "...By_1" vs "...By_10"),
+    though the word-boundary match alone already prevents that.
+    """
+    if not reverse_map or not text:
+        return text
+    pattern = "|".join(re.escape(p) for p in sorted(reverse_map, key=len, reverse=True))
+    return re.sub(rf"\b(?:{pattern})\b", lambda m: reverse_map[m.group(0)], text)
 
 # Below this, we don't silently auto-load a report — we suggest it instead.
 CONFIDENCE_THRESHOLD = 0.7
@@ -78,6 +161,7 @@ no comments, and no control characters inside string values (write newlines insi
 as the two characters \\n, not a literal line break; escape any backslash as \\\\ and any
 double quote as \\"). Double-check the JSON is syntactically complete before responding.
 
+Most charts are single-series:
 {
   "answer": "your detailed answer here",
   "chart": {
@@ -89,6 +173,31 @@ double quote as \\"). Double-check the JSON is syntactically complete before res
   "follow_up_questions": ["Q1?", "Q2?", "Q3?"],
   "data_used": "brief note on which data you used"
 }
+
+If the data context has a per-category breakdown per label (e.g. a field like
+"..._by_month" whose values are themselves {"Open": n, "Closed": n} objects,
+not plain numbers), and the user asked for a comparison/stacked/grouped chart
+across that breakdown, use "series" instead of "values" — one entry per
+category, each with its own array of numbers aligned to "labels" — and set
+"stacked": true if the user asked for a stacked chart (false/omitted for
+grouped side-by-side bars):
+{
+  "answer": "...",
+  "chart": {
+    "type": "bar",
+    "labels": ["Oct", "Nov", "Dec"],
+    "series": [
+      {"name": "Open", "values": [10, 8, 12]},
+      {"name": "Closed", "values": [13, 14, 11]}
+    ],
+    "stacked": true,
+    "title": "Chart title"
+  },
+  "follow_up_questions": ["Q1?", "Q2?", "Q3?"],
+  "data_used": "brief note on which data you used"
+}
+Never claim a monthly status breakdown is unavailable without first checking the data
+context for a "..._by_month" field shaped this way — it means the breakdown exists.
 If no chart is appropriate, set "chart": null."""
 
 EXPLAINER_SYSTEM_TEMPLATE = """You are BISync, a friendly guide helping a new user get oriented with a
@@ -181,6 +290,11 @@ FILTER_EXTRACTION_SYSTEM_TEMPLATE = """You decide whether a user's question abou
 needs a LIVE, filtered list of individual records — as opposed to being answerable from overall
 totals/breakdowns already known.
 
+IMPORTANT — date defaults: all data in this dataset falls within calendar year 2025. If the
+question names a month or date range WITHOUT an explicit year (e.g. "March", "between March and
+June", "last quarter"), assume year 2025 for date_from/date_to — never guess a different year.
+Only use a different year if the person explicitly states one (e.g. "March 2024").
+
 Set "needs_records": true when the question:
 - names a specific ID (e.g. a ticket number or order number)
 - asks for a date range (e.g. "between March and June", "last 6 months")
@@ -213,9 +327,19 @@ or
 # model an easy, wrong shortcut to answer with a summary instead). This is
 # checked deterministically in code so it can never be talked out of it.
 _EXPLICIT_LIST_PATTERN = re.compile(
-    r"\b(list|show me|show all|display|give me|find all|pull up|bring up)\b",
+    r"\b(list|show me|show all|display|give me|find all|pull up|bring up"
+    r"|top\s+\d+|which (?:ticket|tickets|order|orders|requester)"
+    r"|who (?:requested|created|filed|submitted)|requested by (?:who|whom)"
+    r"|created by (?:who|whom))\b",
     re.IGNORECASE,
 )
+# "top N ... by who" / "who requested" / "which ticket(s)" style questions
+# need actual rows (you can't name a specific requester from an aggregate
+# count), but don't contain list/show-me language, so the original pattern
+# let the LLM's own needs_records judgment decide — and it decided wrong
+# for "top 2 high priority tickets are requested by who?", answering from
+# tickets_by_requester (an aggregate) instead of querying real rows. These
+# phrasings are forced the same way list/show-me already was.
 
 
 _STATUS_KEYWORDS = {
@@ -239,6 +363,25 @@ def _deterministic_fallback_filters(message: str, table: str) -> dict:
         if re.search(rf"\b{keyword}\b", lowered):
             found[field] = value
     return found
+
+
+def _correct_date_year(filters: dict, message: str) -> dict:
+    """
+    Defensive safety net alongside the prompt instruction above: if a date
+    filter came back with a year other than 2025 (the only year this
+    dataset contains), and the person's message doesn't explicitly mention
+    that other year as a literal 4-digit number, force it back to 2025.
+    This catches the exact bug where "list march tickets" got silently
+    filtered against 2024 instead of 2025.
+    """
+    explicit_years = set(re.findall(r"\b(20\d{2})\b", message))
+    for key in ("date_from", "date_to"):
+        val = filters.get(key)
+        if isinstance(val, str) and len(val) >= 4:
+            year = val[:4]
+            if year != "2025" and year not in explicit_years:
+                filters[key] = "2025" + val[4:]
+    return filters
 
 
 async def extract_query_filters(message: str, table: str) -> dict:
@@ -272,9 +415,10 @@ async def extract_query_filters(message: str, table: str) -> dict:
         }
         if forced and not clean_filters:
             clean_filters = _deterministic_fallback_filters(message, table)
+        clean_filters = _correct_date_year(clean_filters, message)
         return {"needs_records": forced or bool(parsed.get("needs_records")), "filters": clean_filters}
     except Exception as e:
-        print(f"\n⚠️ extract_query_filters failed (defaulting to no live query unless explicit list request): {e}\n")
+        print(f"\n⚠️ extract_query_filters failed (defaulting to no live query unless explicit list request): {type(e).__name__}\n")
         return {"needs_records": forced, "filters": _deterministic_fallback_filters(message, table) if forced else {}}
 
 
@@ -301,7 +445,7 @@ def run_live_query(table: str, filters: dict) -> list[dict] | None:
     try:
         return query_fn(**filters)
     except Exception as e:
-        print(f"\n⚠️ run_live_query failed for {table} with filters {filters}: {e}\n")
+        print(f"\n⚠️ run_live_query failed for {table} (fields: {list(filters.keys())!r}): {type(e).__name__}\n")
         return None
 
 
@@ -338,7 +482,9 @@ async def detect_intent(message: str, reports: list) -> tuple[IntentType, str | 
         confidence = float(parsed.get("confidence", 0.0) or 0.0)
         return intent, report_id, confidence
     except Exception as e:
-        print(f"\n⚠️ detect_intent parse failure: {e}\nRAW:\n{raw if 'raw' in dir() else '(no response)'}\n")
+        print(f"\n⚠️ detect_intent parse failure: {type(e).__name__}\n")
+        if _DEBUG:
+            print(f"RAW:\n{raw if 'raw' in dir() else '(no response)'}\n")
         return IntentType.GENERAL, None, 0.0
 
 
@@ -377,7 +523,9 @@ async def _background_critic_log(question: str, answer: str, data_context: str) 
     try:
         valid = await critic_check(question, answer, data_context)
         if not valid:
-            print(f"\n⚠️ BACKGROUND CRITIC FLAGGED A RESPONSE\nQ: {question}\nA: {answer[:300]}\n")
+            print(f"\n⚠️ BACKGROUND CRITIC FLAGGED A RESPONSE (answer length={len(answer)})\n")
+            if _DEBUG:
+                print(f"Q: {question}\nA: {answer[:300]}\n")
     except Exception:
         pass
 
@@ -471,6 +619,7 @@ def fact_check_numbers(answer_text: str, dataset_metrics: dict | None) -> bool:
 # a business question is never just a bare schema field name.
 _SCHEMA_FIELD_NAMES = {
     "answer", "chart", "type", "labels", "values", "title",
+    "series", "stacked", "name",
     "follow_up_questions", "up_questions", "questions",
     "data_used", "used", "valid", "issue",
 }
@@ -539,11 +688,17 @@ def _looks_like_corrupted_followups(follow_ups) -> bool:
         # brace/bracket, or the classic '": "value' leak from a broken field.
         if re.search(r'"\s*:\s*"', text) or "{" in text or "}" in text or text.count('"') >= 2:
             return True
-        # A genuine follow-up question always ends in '?' (matches what the
-        # system prompt asks for: "Q1?", "Q2?", "Q3?"). Scrambled fragments
-        # from a broken repair tend to trail off mid-sentence instead.
-        if not text.endswith("?"):
-            return True
+        # NOTE: previously also required text.endswith("?") here. Removed —
+        # it caused false-positive retries on perfectly valid follow-ups
+        # phrased as suggestions rather than literal questions (e.g. "Show
+        # me the payment status breakdown across all vendors"), which the
+        # LLM produces naturally and non-deterministically. That created
+        # the exact intermittent symptom of "works on reload, fails
+        # sometimes" — the retry loop burning all 3 attempts re-rolling for
+        # phrasing luck instead of catching real corruption. The remaining
+        # checks (backslashes, raw JSON-fragment leaks, unbalanced parens,
+        # excessive length) are true structural corruption signals and
+        # don't depend on phrasing style.
         if text.count("(") != text.count(")"):
             return True
     return False
@@ -587,6 +742,7 @@ async def generate_response(request: ChatRequest, dataset_metrics: dict | None =
     # additive to dataset_metrics, not a replacement — simple totals/breakdowns
     # still answer straight from the cheaper static dict.
     records = None
+    pseudonym_map: dict[str, str] = {}  # pseudonym -> real value, filled in if masking happens below
     # The frontend has been observed sending report_context as a combined
     # "id - display name" label (e.g. "rpt-005 - Service Central Tickets")
     # rather than a clean id. Normalize defensively so the DAX_TABLE_MAP
@@ -594,26 +750,45 @@ async def generate_response(request: ChatRequest, dataset_metrics: dict | None =
     # skipping the entire live-query feature every time.
     _clean_report_id = (loaded_report_id.split(" - ")[0].strip() if loaded_report_id else loaded_report_id)
     dax_table = DAX_TABLE_MAP.get(_clean_report_id) if _clean_report_id else None
-    print(f"\n🔍 DEBUG: loaded_report_id={loaded_report_id!r}  clean_id={_clean_report_id!r}  dax_table={dax_table!r}\n")
+    # Logged fields below are metadata only (report/table identifiers, field
+    # names, row counts) — never the question text, filter VALUES, or query
+    # results themselves. Those are real business data once connected to a
+    # live dataset and must not land in server logs. If deeper debugging is
+    # ever needed, gate it behind an explicit, non-default DEBUG env flag
+    # rather than printing unconditionally.
+    if _DEBUG:
+        print(f"\n🔍 DEBUG: clean_id={_clean_report_id!r}  dax_table={dax_table!r}\n")
     if dax_table:
         try:
             extraction = await extract_query_filters(request.message, dax_table)
         except Exception as e:
-            print(f"\n🔍 DEBUG: extract_query_filters raised unexpectedly: {e!r}\n")
+            print(f"\n⚠️ extract_query_filters raised unexpectedly: {type(e).__name__}\n")
             extraction = {"needs_records": False, "filters": {}}
 
-        print(f"\n🔍 DEBUG: extraction result = {extraction!r}\n")
+        if _DEBUG:
+            print(f"\n🔍 DEBUG: needs_records={extraction.get('needs_records')!r}  filter_fields={list(extraction.get('filters', {}).keys())!r}\n")
 
         if extraction.get("needs_records"):
             records = run_live_query(dax_table, extraction.get("filters", {}))
-            print(f"\n🔍 DEBUG: run_live_query returned {len(records) if records is not None else None} rows\n")
+            if _DEBUG:
+                print(f"\n🔍 DEBUG: run_live_query returned {len(records) if records is not None else None} rows\n")
             if records is not None:
                 sample = records if len(records) <= 15 else records[:10]
+                # Mask sensitive fields ONLY in what's sent to the LLM.
+                # `records` itself (used below for ChatResponse.records,
+                # the table/CSV the user sees) stays untouched and real.
+                # pseudonym_map is used later to put real names back into
+                # the LLM's answer text before it's shown to the user.
+                llm_sample, pseudonym_map = _mask_records_for_llm(sample, dax_table)
                 data_context += f"""
 
 MATCHING RECORDS ({len(records)} total, filters applied: {extraction.get("filters", {})}):
-{json.dumps(sample, indent=2, default=str)}
+{json.dumps(llm_sample, indent=2, default=str)}
 {f"... plus {len(records) - len(sample)} more (all are shown to the user in the table below)" if len(records) > len(sample) else ""}
+
+NOTE: Fields like CreatedBy/RequestedBy/Vendor above are pseudonymized (e.g.
+"CreatedBy_1") to protect real identities. Refer to them by their pseudonym
+in your answer; do not attempt to guess or reconstruct the real name.
 """
 
     if dataset_metrics:
@@ -643,6 +818,13 @@ MATCHING RECORDS ({len(records)} total, filters applied: {extraction.get("filter
             answer = parsed.get("answer", "I couldn't generate a response.")
             follow_ups = parsed.get("follow_up_questions", [])
 
+            # Put real names back for the user — the LLM only ever saw
+            # pseudonyms (see _mask_records_for_llm), but the person asking
+            # is allowed to see the real value. No-op when pseudonym_map is
+            # empty (the common case: no sensitive-field records involved).
+            answer = _unmask_text(answer, pseudonym_map)
+            follow_ups = [_unmask_text(f, pseudonym_map) for f in follow_ups]
+
             if _looks_like_corrupted_answer(answer) or _looks_like_corrupted_followups(follow_ups):
                 # The JSON "parsed" without raising, but either the answer
                 # text or one of the follow-up-question entries is nonsense
@@ -653,7 +835,9 @@ MATCHING RECORDS ({len(records)} total, filters applied: {extraction.get("filter
                 # Log it loudly (this is a *silent* failure mode, unlike the
                 # except block below) and force a retry rather than ever
                 # showing this to the user.
-                print(f"\n⚠️ CORRUPTED RESPONSE DETECTED (attempt {attempt}): answer={answer!r} follow_ups={follow_ups!r}\nRAW:\n{raw}\n")
+                print(f"\n⚠️ CORRUPTED RESPONSE DETECTED (attempt {attempt}, answer_len={len(answer)}, follow_up_count={len(follow_ups)})\n")
+                if _DEBUG:
+                    print(f"answer={answer!r} follow_ups={follow_ups!r}\nRAW:\n{raw}\n")
                 if attempt < 2:
                     messages.append({"role": "assistant", "content": raw})
                     messages.append({"role": "user", "content": "Your previous response was malformed or incomplete. Please respond again with a complete, valid JSON object as instructed."})
@@ -685,11 +869,29 @@ MATCHING RECORDS ({len(records)} total, filters applied: {extraction.get("filter
                 chart_data = None
                 if parsed.get("chart"):
                     c = parsed["chart"]
+                    # Multi-series charts (e.g. Open vs Closed per month) carry
+                    # "series" instead of a flat "values" array — see the
+                    # ANALYST_SYSTEM schema above. Only set when present so
+                    # existing single-series responses are unaffected.
+                    # NOTE: ChartData in models.py must have `series` (list of
+                    # {name, values}) and `stacked` (bool) as optional fields
+                    # for this to actually reach the frontend — InlineChart.jsx
+                    # already expects both.
+                    raw_series = c.get("series")
+                    series = None
+                    if isinstance(raw_series, list) and raw_series:
+                        series = [
+                            {"name": s.get("name", ""), "values": s.get("values", [])}
+                            for s in raw_series
+                            if isinstance(s, dict)
+                        ]
                     chart_data = ChartData(
                         type=c.get("type", "bar"),
                         labels=c.get("labels", []),
                         values=c.get("values", []),
                         title=c.get("title", ""),
+                        series=series,
+                        stacked=bool(c.get("stacked", False)),
                     )
                 data_used = parsed.get("data_used")
                 if not fact_ok:
@@ -701,7 +903,7 @@ MATCHING RECORDS ({len(records)} total, filters applied: {extraction.get("filter
                     intent=intent,
                     chart=chart_data,
                     records=records,
-                    follow_up_questions=parsed.get("follow_up_questions", []),
+                    follow_up_questions=follow_ups,
                     data_used=data_used,
                     loaded_report=auto_loaded,
                     suggested_report=suggested_report,
@@ -711,8 +913,8 @@ MATCHING RECORDS ({len(records)} total, filters applied: {extraction.get("filter
             messages.append({"role": "user", "content": "Your response had inconsistencies. Please revise with accurate data."})
 
         except Exception as e:
-            print(f"\n❌ CHAT ENGINE ERROR [Attempt {attempt}]: {str(e)}\n")
-            if raw:
+            print(f"\n❌ CHAT ENGINE ERROR [Attempt {attempt}]: {type(e).__name__}\n")
+            if _DEBUG and raw:
                 print(f"RAW RESPONSE THAT FAILED TO PARSE:\n{raw}\n---\n")
 
             if attempt == 2:
