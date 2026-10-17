@@ -1,0 +1,14 @@
+Certification Count = 
+SWITCH(
+    SELECTEDVALUE('Cert_Header_Mapping'[Cert Name]),
+    "Ocean", [Ocean],
+    "SQL", [SQL],
+    "Python", [PYTHON],
+    "Anthropic", [ANTHROPIC Certification],
+    "Github Copilot", [GitHub],
+    "Databricks", [Databricks Cert],
+    "SnowPro", [SnowPro cert],
+    "AWS", [AWS],
+    "Microsoft", [Microsoft],
+    "Industry", [Industry Cert]
+)
