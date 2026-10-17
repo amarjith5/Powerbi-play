@@ -1,0 +1,19 @@
+Cert_Header_Mapping = 
+DATATABLE(
+    "Parent Name", STRING,
+    "Parent Sort", INTEGER,
+    "Cert Name", STRING,
+    "Cert Sort", INTEGER,
+    {
+        {"OCEAN Role based-Internal certification", 1, "Ocean", 1},
+        {"OCEAN Skill based-Internal certification", 2, "SQL", 2},
+        {"OCEAN Skill based-Internal certification", 2, "Python", 3},
+        {"Certification", 3, "Anthropic", 4},
+        {"Certification", 3, "Github Copilot", 5},
+        {"Certification", 3, "Databricks", 6},
+        {"Certification", 3, "SnowPro", 7},
+        {"Certification", 3, "AWS", 8},
+        {"Certification", 3, "Microsoft", 9},
+        {"Certification", 3, "Industry", 10}
+    }
+)
