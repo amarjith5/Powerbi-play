@@ -1,0 +1,253 @@
+Since you're focusing on Power BI + Fabric + Copilot readiness and you have 90+ Excel reports, I'd approach this as a mini migration program rather than individual report conversions.
+
+Phase 1: Assessment & Inventory
+
+Create a master inventory Excel first.
+
+Field	ExampleReport ID	R001
+Report Name	Sales Performance
+Business Owner	Retail Team
+Excel File Location	SharePoint Path
+Refresh Frequency	Daily
+Data Source	SQL Server
+No. of Sheets	12
+No. of Pivots	8
+No. of VBA Macros	3
+No. of Formulas	5000
+Power Query Used	Yes
+Power Pivot Used	No
+Migration Priority	High
+Copilot Ready	Yes/No
+Analyze each report
+
+Categorize:
+
+Type A
+
+Simple tables
+Few formulas
+
+Type B
+
+Pivot Tables
+Power Query
+
+Type C
+
+VBA / Macros
+Complex business logic
+
+Type D
+
+Executive dashboards
+Phase 2: Excel Readiness Assessment
+
+For every report check:
+
+Data
+
+✅ Source identified
+
+✅ Source accessible
+
+✅ Refresh method documented
+
+✅ Data owner known
+
+Excel Logic
+
+Document:
+
+VLOOKUP/XLOOKUP
+INDEX MATCH
+SUMIFS
+VBA
+Macros
+Pivot Tables
+Power Query
+Power Pivot
+
+Create a column:
+
+Logic ComplexityLow
+Medium
+High
+Phase 3: Power BI Migration Readiness
+
+Questions:
+
+Can this be Directly Migrated?
+
+Excel →
+
+Power BI Dataset →
+
+Power BI Report
+
+Data Model Check
+
+Identify:
+
+Fact tables
+Dimension tables
+Keys
+Relationships
+
+Example:
+
+Customer_ID
+
+Product_ID
+
+Store_ID
+
+Date_Key
+
+Data Quality
+
+Check:
+
+Nulls
+Duplicates
+Invalid dates
+Missing keys
+Phase 4: Copilot Readiness
+
+Most teams miss this.
+
+Copilot works best when semantic models are clean.
+
+Naming Standards
+
+Bad:
+
+tbl1
+col1
+amt
+
+
+Good:
+
+Sales Fact
+Customer Name
+Net Sales Amount
+
+Measure Naming
+
+Bad:
+
+Sales1
+Sales2
+
+
+Good:
+
+Total Sales
+Average Sales
+Profit Margin %
+
+Descriptions
+
+Add descriptions for:
+
+Tables
+Columns
+Measures
+
+Example:
+
+Total Sales = Sum of invoice amount after discount.
+
+
+Copilot uses these descriptions.
+
+Synonyms
+
+Example:
+
+Revenue
+Sales
+Turnover
+Income
+
+
+These improve Q&A and Copilot.
+
+Phase 5: Fabric Readiness
+
+Determine where data should live.
+
+Small
+
+Excel → Dataflow Gen2 → Semantic Model
+
+Medium
+
+Excel → Lakehouse → Semantic Model
+
+Large
+
+SQL → Lakehouse → Warehouse → Semantic Model
+
+Phase 6: Migration Checklist
+
+For each report
+
+Source
+ Source identified
+ Owner identified
+ Access available
+Excel
+ Formula documented
+ Pivot documented
+ VBA documented
+Power BI
+ Data Model created
+ Relationships validated
+ Measures created
+Validation
+ Excel totals match
+ Row counts match
+ KPIs match
+Deployment
+ Published
+ Refresh configured
+ Security configured
+Phase 7: Copilot Validation
+
+Test prompts like:
+
+Show total sales by region.
+
+Which products grew most last quarter?
+
+Explain profit decline in 2026.
+
+
+If Copilot gives sensible answers, semantic model is ready.
+
+Deliverables for the 90-Report Project
+
+Create 4 trackers:
+
+1. Report Inventory
+
+90 reports list.
+
+2. Assessment Tracker
+
+Complexity and effort.
+
+3. Migration Tracker
+Report	StatusReport A	Not Started
+Report B	Development
+Report C	UAT
+Report D	Production
+4. Copilot Readiness Tracker
+Check	StatusFriendly Names	✅
+Descriptions	✅
+Measures Defined	✅
+Relationships Validated	✅
+Synonyms Added	✅
+
+This structure is very close to how enterprise BI modernization projects are run when migrating large numbers of Excel reports into Power BI/Fabric while preparing for Copilot adoption.
