@@ -1,0 +1,50 @@
+Your XLSX file is ready
+What Has Been Generated For You
+To save you time, the complete, production-grade Excel workbook has already been built and is ready for Power BI import above. It includes:
+ * Attendance_Fact Sheet: 300 flattened, realistic attendance logs across an entire month (dates, shifts, clock-in/clock-out, decimal hours worked, overtime hours, late arrival flags, and status distributions).
+ * Employee_Dim Sheet: 15 employees mapped by ID, Department, Role, Gender, and Work Mode (Star Schema ready).
+ * Executive_KPIs Sheet: Live Excel formulas for Attendance Rate, Late Arrival %, Overtime, and Headcount.
+ * PowerBI_DAX_Guide Sheet: 6 copy-paste DAX formulas matched directly to recommended Power BI visual types.
+The Best Prompts to Get an Excel File in Microsoft Copilot Basic
+Copilot Basic gives you an Excel file in two ways:
+ * Direct "Export to Excel" Button (Native Web Copilot Table): When Copilot outputs a structured Markdown table, hovering over the top-right corner of the table reveals an "Edit in Excel" / "Export to Excel" icon that opens it directly into Microsoft Excel.
+ * Direct .xlsx Download (via Python Execution): Asking Copilot to run Python code to create and present a .xlsx file.
+Here are the two best prompts tailored to get that result:
+Prompt 1: The One-Click "Export to Excel" Table Prompt (Recommended for Web Copilot)
+> Copy and paste this into Copilot Basic:
+> "Act as a Senior HR Analytics Architect. I need a clean, comprehensive dataset representing realistic organizational attendance data formatted specifically for import into Power BI.
+> Please output the dataset as a complete Markdown table so that the Copilot 'Export to Excel' / 'Edit in Excel' button is enabled.
+> Dataset Requirements:
+>  * Volume & Coverage: Provide 120 rows representing 12 diverse employees across 10 business working days (October 2026, Monday–Friday).
+>  * Exact Columns Needed:
+>    * Attendance_ID (Integer, 1001 onwards)
+>    * Employee_ID (EMP101 to EMP112)
+>    * Employee_Name (Full realistic names)
+>    * Department (Technology, Sales, HR, Finance, Operations)
+>    * Date (YYYY-MM-DD format only)
+>    * Shift_Type (General: 09:00 - 18:00)
+>    * Work_Location (Office, Remote, Client Site)
+>    * Attendance_Status (Present, Sick Leave, Casual Leave, WFH Approved, Unplanned Absent)
+>    * Check_In_Time (HH:MM in 24-hr format; leave empty for Leave/Absent)
+>    * Check_Out_Time (HH:MM in 24-hr format; leave empty for Leave/Absent)
+>    * Total_Hours_Worked (Decimal number e.g., 8.50; 0 for Absent/Leave)
+>    * Overtime_Hours (Decimal hours exceeding 9h shift; e.g., 1.25, 0.00)
+>    * Is_Late (Flag: 'Yes' if Check_In_Time > 09:15, otherwise 'No')
+> Realism Rules:
+>  * Maintain an ~87% Present rate, ~5% Sick/Casual leave, ~5% WFH, and ~3% Unplanned Absenteeism.
+>  * Simulate punctuality realistically: assign 2 employees who are frequently late (e.g., check-in between 09:20 and 09:50) and 2 tech employees with regular overtime.
+>  * Do NOT summarize or use ellipses (...). Output all rows in a single uninterrupted table."
+> 
+Prompt 2: The Direct Python-Generated .xlsx File Prompt (For Copilot with Code Interpreter)
+If your Copilot instance has the Code/Python feature active (look for the paperclip/code icon or Copilot Creative mode), use this prompt to have it generate a downloadable binary file:
+> Copy and paste this into Copilot:
+> "Write and execute a Python script using pandas and openpyxl to generate an Excel workbook titled Company_Attendance_PowerBI.xlsx and provide a direct download link for the file.
+> The workbook must have two separate tabs:
+>  * Attendance_Logs: 200 rows of daily logs with columns: Log_ID, Employee_ID, Date (YYYY-MM-DD), Check_In, Check_Out, Total_Hours (float), Overtime_Hours (float), Status (Present, Absent, On Leave, WFH), Late_Flag (Yes/No), Work_Location (Office/Remote).
+>  * Employee_Master: 20 unique employees with columns: Employee_ID, Full_Name, Department, Designation, Base_Office.
+> Apply clean styling: Navy blue header fills with white bold text, zebra striping, borders, and set column widths properly so no text is truncated. Execute the script and provide the .xlsx file."
+> 
+How to Connect the Excel File into Power BI in 3 Steps:
+ * Open Power BI Desktop and click Get Data -> Excel workbook.
+ * Select Organizational_Attendance_PowerBI_Ready.xlsx.
+ * Check both Attendance_Fact and Employee_Dim, then click Load (Power BI will automatically detect the 1-to-many relationship on Employee_ID).
