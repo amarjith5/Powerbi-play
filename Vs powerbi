@@ -194,3 +194,38 @@ Run Prompt 1 first and share what Copilot lists for your columns if you want me 
   }
 }
 
+
+
+
+
+
+
+
+
+Yes—keeping Page 1 untouched and building the new dashboard on a fresh page is actually the safest way to do this.
+Step 1: Create the blank page in Power BI Desktop first
+ * Click the + icon at the bottom of Power BI Desktop to add a new page, and rename it to Sales Analysis.
+ * Press Ctrl + S to save. (Doing this in Power BI Desktop first lets Power BI automatically generate the valid page.json and update pages.json for you.)
+Step 2: Attach your reference image & paste this updated prompt in VS Code Copilot
+In VS Code Copilot Chat (Interactive mode), attach your Sales Analysis Dashboard image (68102.png) and send this prompt:
+> Do NOT use Computer Use. Leave Page 1 (1afba7e8a3782786b275) completely untouched.
+> Edit ONLY the new Sales Analysis page inside Training.Report/definition/pages/.
+> Strict Schema Rule: Before creating any visual, read the existing valid visual.json files inside Page 1 (1afba7e8a3782786b275/visuals/) and use their exact $schema, structure, and queryState format as your template. Do NOT add filterConfig or TopN blocks.
+> Recreate the layout and blue-and-white visual style of the attached Sales Analysis Dashboard image on the Sales Analysis page (1280×720 canvas), mapping the visuals to my actual semantic model tables (_Measures, dim_dates 6, dim_products 3, dim_customers 7):
+>  * Top Title Banner: Textbox centered at top: "Sales Analysis Dashboard" (bold blue #0066CC).
+>  * KPI Row (Top): 3 rounded white KPI cards side-by-side in a light-blue strip showing _Measures[Total Sales], _Measures[Total Orders], and _Measures[Total Quantity].
+>  * Middle Row:
+>    * Far Left: Date range slicer using dim_dates 6[Date].
+>    * Left-Center: Clustered Column Chart — dim_products 3[Category] vs _Measures[Total Sales].
+>    * Center: Line Chart — dim_dates 6[Date] vs _Measures[Total Sales].
+>    * Right: Clustered Column Chart — dim_customers 7[Region] vs _Measures[Total Sales].
+>  * Bottom Row:
+>    * Far Left: Vertical list slicer using dim_dates 6[Year].
+>    * Left-Center: Donut Chart — dim_customers 7[Segment] vs _Measures[Total Sales].
+>    * Center: Pie Chart — dim_customers 7[Region] vs _Measures[Total Orders].
+>    * Right: Clustered Column Chart — dim_products 3[Price] vs _Measures[Total Quantity].
+> Validate that every new JSON file parses cleanly and list the files created.
+> 
+Step 3: Reload and Verify
+Switch back to Power BI Desktop and click Apply external changes before clicking Keep in VS Code. Your original Page 1 will stay exactly as you left it, and the new layout will appear on Sales Analysis.
+
