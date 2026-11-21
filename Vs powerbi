@@ -1,0 +1,27 @@
+To make sure Copilot only touches the bottom matrix on Page 3 and leaves the top blue-header table and your other four pages (Page 1, UDX Account Status, Page 2, Certification Details) completely untouched, force it to identify and confirm the exact visual ID before making any edits.
+Attach your reference image in VS Code Copilot Chat (Interactive mode) and paste this exact prompt:
+> Connect to my open Power BI Desktop session and inspect ONLY the report page named Page 3.
+> Strict Scope Rules:
+>  * Do NOT modify any other pages (Page 1, UDX Account Status, Page 2, or Certification Details).
+>  * On Page 3, there are two tables/matrices stacked vertically. Do NOT touch the top table.
+>  * ONLY modify the bottom (second) table/matrix on Page 3.
+> Step 1: Inspect Page 3, find the visual ID of the bottom matrix (the one with the larger Y-coordinate), and list its current fields to confirm we have the right visual. Do not edit any files until I confirm.
+> Step 2: Once I confirm, update ONLY that bottom matrix (and create new DAX measures only if needed, without changing existing ones) to match the attached reference image.
+> 
+How to verify it's safe before applying:
+ * When Copilot replies with Step 1, check that the fields it lists match your bottom matrix (and not the top one).
+ * Reply "Confirmed, proceed with Step 2."
+ * Before clicking Keep or Allow on any file edit, glance at the file name—it should only be touching the JSON for that single visual (or Page 3).
+
+
+
+
+
+
+
+
+
+
+
+
+Connect to my open Power BI Desktop session using the Power BI Authoring MCP server, inspect my semantic model, and recreate the layout, KPIs, and visuals from this reference image.
