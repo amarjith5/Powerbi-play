@@ -1,4 +1,4 @@
-To make sure Copilot only touches the bottom matrix on Page 3 and leaves the top blue-header table and your other four pages (Page 1, UDX Account Status, Page 2, Certification Details) completely untouched, force it to identify and confirm the exact visual ID before making any edits.
+huTo make sure Copilot only touches the bottom matrix on Page 3 and leaves the top blue-header table and your other four pages (Page 1, UDX Account Status, Page 2, Certification Details) completely untouched, force it to identify and confirm the exact visual ID before making any edits.
 Attach your reference image in VS Code Copilot Chat (Interactive mode) and paste this exact prompt:
 > Connect to my open Power BI Desktop session and inspect ONLY the report page named Page 3.
 > Strict Scope Rules:
@@ -228,4 +228,199 @@ In VS Code Copilot Chat (Interactive mode), attach your Sales Analysis Dashboard
 > 
 Step 3: Reload and Verify
 Switch back to Power BI Desktop and click Apply external changes before clicking Keep in VS Code. Your original Page 1 will stay exactly as you left it, and the new layout will appear on Sales Analysis.
+
+
+
+
+
+
+
+
+
+
+
+{
+  "name": "USJ Executive Navy Gold",
+  "dataColors": [
+    "#13294B",
+    "#4A6B8C",
+    "#7A92A9",
+    "#B59A5B",
+    "#2C4A70",
+    "#94A3B8",
+    "#C8B273",
+    "#1E3A5F"
+  ],
+  "background": "#FFFFFF",
+  "foreground": "#13294B",
+  "tableAccent": "#13294B",
+  "textClasses": {
+    "title": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 11,
+      "color": "#13294B"
+    },
+    "callout": {
+      "fontFace": "Segoe UI Bold",
+      "fontSize": 22,
+      "color": "#111827"
+    },
+    "header": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 10,
+      "color": "#334155"
+    },
+    "label": {
+      "fontFace": "Segoe UI",
+      "fontSize": 9,
+      "color": "#64748B"
+    }
+  },
+  "visualStyles": {
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": { "solid": { "color": "#F4F6F9" } },
+            "transparency": 0
+          }
+        ]
+      }
+    },
+    "*": {
+      "*": {
+        "background": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#FFFFFF" } },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#E2E8F0" } },
+            "radius": 8
+          }
+        ]
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+Follow these 4 steps to build the exact Universal Studios Japan executive layout on a fresh page without touching Page 1 or Sales Analysis.
+Step 1: Create the Blank Page in Power BI Desktop
+ * Click + at the bottom of Power BI Desktop and rename the new page to Executive Overview.
+ * Press Ctrl + S to save so Power BI generates the valid page.json folder.
+Step 2: Save the Navy & Gold Theme (usj-exec-theme.json)
+In VS Code, create a new file named usj-exec-theme.json in your Cert Training root folder, paste this JSON, and press Ctrl + S:
+{
+  "name": "USJ Executive Navy Gold",
+  "dataColors": [
+    "#13294B",
+    "#4A6B8C",
+    "#7A92A9",
+    "#B59A5B",
+    "#2C4A70",
+    "#94A3B8",
+    "#C8B273",
+    "#1E3A5F"
+  ],
+  "background": "#FFFFFF",
+  "foreground": "#13294B",
+  "tableAccent": "#13294B",
+  "textClasses": {
+    "title": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 11,
+      "color": "#13294B"
+    },
+    "callout": {
+      "fontFace": "Segoe UI Bold",
+      "fontSize": 22,
+      "color": "#111827"
+    },
+    "header": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 10,
+      "color": "#334155"
+    },
+    "label": {
+      "fontFace": "Segoe UI",
+      "fontSize": 9,
+      "color": "#64748B"
+    }
+  },
+  "visualStyles": {
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": { "solid": { "color": "#F4F6F9" } },
+            "transparency": 0
+          }
+        ]
+      }
+    },
+    "*": {
+      "*": {
+        "background": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#FFFFFF" } },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#E2E8F0" } },
+            "radius": 8
+          }
+        ]
+      }
+    }
+  }
+}
+
+In Power BI Desktop, go to Design → Themes → Import theme and select usj-exec-theme.json.
+Step 3: Paste This Prompt in VS Code Copilot (Interactive Mode)
+Attach your reference image (67983.gif) in VS Code Copilot Chat and send this exact prompt:
+> Do NOT use Computer Use. Leave Page 1 and Sales Analysis completely untouched. Edit ONLY the new Executive Overview page inside Training.Report/definition/pages/.
+> Strict Schema Rule: Read the existing valid visual.json files from Sales Analysis first and reuse their exact $schema, structure, and queryState format. Do NOT add filterConfig, TopN blocks, sparklines, or custom floating callout annotations.
+> Recreate the layout and Navy/Gold executive style of the attached Universal Studios Japan reference image on Executive Overview (1280×720 canvas), mapping to my actual model (_Measures, dim_dates 6, dim_products 3, dim_customers 7):
+>  * Top Header Banner (y=0, height=64, full width 1280):
+>    * White background rectangle (#FFFFFF) with a subtle bottom border (#E2E8F0).
+>    * Leave the far-left x=0 to 72 empty so I can drop the Universal Studios logo PNG there manually.
+>    * Add a left-aligned Title Textbox starting at x=80: "Universal Studios Japan | Executive Sales Overview" (Segoe UI Semibold, 20pt, #13294B).
+>  * Left Dark-Navy Sidebar (x=0, y=64, width=200, height=656):
+>    * Dark navy background rectangle (#0F1E36, no border, placed behind the slicers).
+>    * 4 stacked dropdown slicers inside the sidebar with white titles and white dropdown backgrounds: dim_dates 6[Year], dim_dates 6[Month], dim_products 3[Category], and dim_customers 7[Region].
+>  * Top KPI Row (x=216 to 1264, y=78, height=105):
+>    * 5 equal-width white KPI cards side-by-side showing _Measures[Total Sales], _Measures[Total Orders], _Measures[Total Quantity], _Measures[Average Order Value], and _Measures[YoY % Growth] with clean category labels visible.
+>  * Middle Row (x=216 to 1264, y=198, height=245):
+>    * Left (60% width): Line and Clustered Column Chart — dim_dates 6[Date] (Month level) on X-axis, _Measures[Total Sales] on Column Y-axis, and _Measures[MoM % Growth] on Line Y-axis.
+>    * Right (40% width): Horizontal Clustered Bar Chart — dim_products 3[Category] on Y-axis, _Measures[Total Sales] on X-axis.
+>  * Bottom Row (x=216 to 1264, y=458, height=245):
+>    * Left (45% width): Donut Chart — dim_customers 7[Segment] vs _Measures[Total Sales].
+>    * Right (55% width): Area Chart — dim_dates 6[Date] (Month level) vs _Measures[Total Orders].
+> Validate that every new JSON file parses cleanly and list the files created.
+> 
+Step 4: 30-Second Manual Finish in Power BI Desktop
+Once you click Apply external changes in Power BI Desktop and verify it loads cleanly (then click Keep in VS Code):
+ * Add the Universal Studios Logo: Go to Insert → Image, select your Universal Studios globe logo PNG, and resize it into the top-left 72×64 slot in the white header banner.
+ * Add the Reset Filters Button: Go to Insert → Buttons → Clear all slicers and place it in the top-right corner of the white header banner (label it Reset Filters).
+ * Save: Press Ctrl + S.
+
 
