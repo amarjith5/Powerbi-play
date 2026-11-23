@@ -1,0 +1,53 @@
+Here is the complete handover document covering what was already built in Attendance.pbip before your changes, followed by the exact workflow so Copilot uses those existing metrics as a baseline for your new feature page and gives you a teammate-ready walkthrough at the end.
+1. Pre-Existing Dashboard Handover Document (Attendance.pbip)
+This document captures the baseline state visible in the Attendance project before your new feature work begins. Because a .pbip screenshot shows visual layout, bound fields, and visible tables rather than full internal M/DAX scripts, items that must be verified directly in the model or TMDL/JSON files are flagged clearly.
+A. Report Pages & Navigation Architecture
+The report currently has 3 pages (Page 1 of 3 shown on the landing view):
+ * Report landing Page: The primary executive attendance screen.
+   * Header strip: Universal Studios logo on the top-left alongside a Report Title placeholder/title block.
+   * Top KPI row: Three KPI cards side-by-side—Total Attendance, Average Daily Attendance, and Attendance Growth %—each displaying a headline number (3347720 / 334720) and a secondary comparison/goal line below it.
+   * Filter control: A date range slider/slicer along the upper-middle band.
+   * Primary analytical visuals: A combo bar-and-line chart plotting attendance bars against a line curve (Total Attendance, PY Attendance, and Attendance Growth %), a horizontal bar chart on the mid-left, a donut chart in the center, and an Attendance Trend line chart on the right.
+   * Footer & metadata: A Last Refreshed on status indicator and a support contact line directing users to the Power BI team for issues or questions.
+ * Detailed Info: Dedicated secondary page tab (content not yet populated or secondary to the landing view).
+ * Glossary: Dedicated definitions/reference page tab wired to report terminology.
+ * Navigation rail: Section labels (Report, Detailed Info, Glossary) are visible alongside the page tabs—verify whether these are styled page tabs, buttons, or bookmarks before altering navigation behavior.
+B. Semantic Model & Visible Data Tables
+The Data pane currently shows 4 tables:
+ * Calculations: Measure/calculation container holding Total Attendance, PY Attendance, Attendance Growth %, Attendance V..., and Column.
+ * Calendar: Date dimension containing Date, Year, Quarter, Month, Month Number, and Week Number. (Note: Year, Quarter, Month, Month Number, and Week Number show Σ icons in the screenshot—check that non-additive attributes are set to Don't summarize and Calendar is marked as a date table.)
+ * Glossary: Reference table containing Term, Definition, Report Information, and Last Refresh.
+ * Test Table: Currently active in the ribbon (Table tools), showing at least Attendance C....
+C. What the Prior Author Built vs. What Remains Unfinished
+ * Already established: The 3-page report shell (Report landing Page, Detailed Info, Glossary), core KPI/trend/comparison visual slots, Calculations, Calendar, and Glossary tables, and a branded header/footer frame.
+ * Needs verification before extending:
+   * Exact DAX definitions in Calculations: Confirm how Total Attendance, PY Attendance, and Attendance Growth % handle date context, blanks, and division by zero.
+   * KPI goal/comparison subtext: Confirm whether the Goal ... text under each KPI card is a dynamic measure, reference label, or static formatting.
+   * Test Table status: Confirm with the prior author or BI team whether Test Table is a temporary test/validation table or part of the expected schema so your new feature doesn't depend on a throwaway table.
+2. Safe Setup Before Prompting Copilot
+ * Duplicate Report landing Page in Power BI Desktop: Right-click Report landing Page → Duplicate Page, rename the copy (for example, Attendance - Feature View), and press Ctrl + S so Power BI creates a valid page folder. Leave Report landing Page, Detailed Info, and Glossary untouched.
+ * Create a safety commit in VS Code terminal:
+   git add . ; git commit -m "baseline before new feature page"
+
+ * Keep existing measures untouched: Any new KPIs you add for your feature should go into a new measure table (such as _Feature_Measures) or use a clear prefix while referencing existing measures in Calculations ([Total Attendance], [PY Attendance], [Attendance Growth %]) rather than rewriting them.
+3. VS Code Copilot Prompt (Reference Existing Metrics + Build New Feature + Explain Everything)
+Paste this into VS Code Copilot Chat (Interactive mode) once your duplicate page is saved and the folder is trusted:
+> Do NOT use Computer Use. Keep Report landing Page, Detailed Info, and Glossary completely untouched, and do NOT modify or overwrite any existing measures in Calculations or any existing columns/tables (Calendar, Glossary, Test Table).
+> Step 1 — Inspect & Document Baseline First:
+> Using the Power BI Authoring MCP server and the files in Attendance.Report and Attendance.SemanticModel, inspect the existing semantic model, existing DAX measures in Calculations, relationships, and the visuals on Report landing Page. Summarize the exact existing measures and data model structure first before making edits.
+> Step 2 — Build Feature on the New Page Only:
+> Edit ONLY the duplicated page (Attendance - Feature View) and create a new measure table named _Feature_Measures (or add new measures there) that references existing measures ([Total Attendance], [PY Attendance], [Attendance Growth %]) rather than replacing them.
+> Focus the new feature on a high-value operational question from the dataset—such as rolling weekly/period momentum, variance vs. prior year (Total Attendance - PY Attendance), and period-over-period consistency across Calendar periods (Year, Quarter, Month, Week Number)—and add focused visuals on Attendance - Feature View matching the project's existing style without adding filterConfig or TopN blocks.
+> Step 3 — Teammate Handover Explanation:
+> At the end, provide a clear, structured explanation covering:
+>  * What existing measures/tables were referenced (and what was left untouched).
+>  * Every new DAX measure created and the business logic behind it.
+>  * Every visual/file added or modified on Attendance - Feature View (including any caveats around Test Table or schema assumptions) so I can explain it directly to my teammates.
+> 
+4. Quick Checklist for Explaining to Your Teammates Afterward
+When you walk your team through the finished change, structure your explanation in four short beats:
+ * Baseline preserved: Report landing Page, Detailed Info, Glossary, and existing measures in Calculations stayed intact.
+ * What was added: The new page (Attendance - Feature View), new measures in _Feature_Measures, and the new feature visuals.
+ * How the math works: Which existing base measures ([Total Attendance], [PY Attendance], [Attendance Growth %]) and Calendar fields (Year, Quarter, Month, Week Number) drive the new feature metrics.
+ * Open items to check together: Any assumptions made around Test Table, KPI goal lines, or refresh behavior (Last Refresh / Last Refreshed on).
+Which specific dataset angle do you want to highlight on the new page—such as weekly/period attendance momentum, PY variance & growth gaps, or calendar/seasonality patterns?
