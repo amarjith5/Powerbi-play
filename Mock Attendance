@@ -74,3 +74,63 @@ Clone the header banner and theme styling from `Attendance_USJ` to create 4 new 
 4. **`Pacing & Trends`**: Daily Attendance + 7-Day Rolling Avg Line Chart, Cumulative YTD CY vs. PY Pacing Curve, and an Operating Day Outlier Table.
 
 At the end, list the exact manual polish steps I should do in Power BI Desktop (slicer sync, conditional formatting scales, and alignment).
+
+
+
+
+
+
+
+
+
+
+
+Act as a Senior Power BI Enterprise Architect working on this `.pbip` project (`Attendance_USJ`) using the Power BI Authoring MCP Server and local PBIR/TMDL files.
+
+### STRICT GUARDRAILS
+1. **No Computer Use.** Work strictly via the MCP server and local `.pbip` files.
+2. **Preserve Baseline Assets:** Do NOT modify, overwrite, or delete `Attendance_USJ`, `Detailed Info`, `Glossary`, or any existing measures in `_Attendance_KPIs`. All visual edits go ONLY on the new `Executive Command Center` page.
+3. **PBIR Safety:** Clone valid `visual.json` structures from `Attendance_USJ`. Keep `visualContainerObjects` inside each visual object. Do NOT write complex `filterConfig` or `TopN` JSON blocks.
+
+---
+
+### PHASE 1: SEMANTIC MODEL, MEASURES, FIELD PARAMETER & THEME (PAUSE AFTER THIS)
+1. **Quick Diagnostic:** Check why `Active Ticket Divisions` currently evaluates to `1`—compare distinct values in `FACT_ATTENDANCE[TICKET_DIVISION_KEY]` vs. `DIM_TICKET_DIVISION_CATEGORY[TICKET_DIVISION_CODE]` and report any unmatched keys.
+2. **Extend `_Attendance_KPIs` (using Display Folders & safe `DIVIDE()`):**
+   - Keep the 5 existing measures untouched and place them in folder `01_Core_Attendance`.
+   - **`02_Time_Intelligence`**:
+     - `[PY Attendance]` (`SAMEPERIODLASTYEAR` on `DIM_FINANCIAL_CALENDAR[THIS_YEAR_DATE]`)
+     - `[YoY Attendance %]`
+     - `[PY Unique Tickets]` and `[YoY Unique Tickets %]`
+     - `[PY Avg Daily Attendance]` and `[YoY Avg Daily %]`
+     - `[Rolling 7D Avg Attendance]` (7-day moving average over `THIS_YEAR_DATE`)
+   - **`03_Operations_Mix`**:
+     - `[Weekend Attendance]` (using `WEEKEND_FLAG`)
+     - `[Weekend Share %]` and `[Weekend Share YoY pts]`
+     - `[Gross Attendance]`, `[Refunded Attendance]`, `[Net Attendance Rate %]`, `[Refund Rate %]` (using `REFUND_SIGN`)
+   - **`04_Card_Reference_Labels`**:
+     - Formatted text measures for KPI card reference labels: `[YoY Attendance Label]` (e.g., `▲ +8.2% vs PY`), `[YoY Tickets Label]`, `[YoY Avg Daily Label]`, `[Weekend Share Label]`, `[Refund Rate Label]`.
+3. **Create a Bilingual / Branch Field Parameter:**
+   - Create a Field Parameter table named `Division_View_Selector` switching between:
+     - `DIM_TICKET_DIVISION_CATEGORY[TICKET_DIVISION_NAME_EN]` ("Ticket Division (EN)")
+     - `DIM_TICKET_DIVISION_CATEGORY[TICKET_DIVISION_NAME_JP]` ("Ticket Division (JP)")
+     - `DIM_TICKET_DIVISION_CATEGORY[REVENUE_BRANCH]` ("Revenue Branch")
+4. **Create Executive Theme JSON (`usj-command-theme.json`):**
+   - Deep Navy `#0B1F3A`, Accent Blue `#0066B3`, Soft Blue `#4DA6FF`, Gold `#D4AF37`, Canvas `#F4F6F9`, White Cards `#FFFFFF`, Positive `#107C10`, Negative `#C50F1F`, Segoe UI typography, clean card borders, and subtle gridlines.
+
+**STOP after Phase 1.** Summarize the diagnostic finding, all created measures, and the Field Parameter so I can click **Apply external changes** in Power BI Desktop, verify zero DAX errors, and commit to Git.
+
+---
+
+### PHASE 2: BUILD `Executive Command Center` PAGE (RUN ONLY AFTER MY CONFIRMATION)
+Update `Executive Command Center` to match this exact 4-zone layout (leave ~70px on the left edge empty for a native Navy Page Navigator rail):
+1. **Top Slicer Strip (4 dropdowns):** `YEAR_QUARTER` / `YEAR_MONTH` (Fiscal Period), `REVENUE_BRANCH`, `TICKET_DIVISION_NAME_EN`, and `WEEKEND_FLAG` / `DAY_DESCRIPTION` (Day Type).
+2. **Row 1 — 5 KPI Cards:** Wire `[Total Attendance]`, `[Unique Tickets]`, `[Average Daily Attendance]`, `[Weekend Share %]`, and `[Net Attendance Rate %]`.
+3. **Row 2 (60% / 40% split):**
+   - **Left:** Line & Clustered Column Chart — X-axis: `YEAR_MONTH`, Column values: `[Total Attendance]` & `[PY Attendance]`, Line value: `[YoY Attendance %]`.
+   - **Right:** Clustered Bar Chart — Y-axis: `Division_View_Selector` (Field Parameter), X-axis: `[Total Attendance]`, with a compact slicer for `Division_View_Selector` right above it.
+4. **Row 3 (60% / 40% split):**
+   - **Left:** Line & Area/Combo Chart — X-axis: `THIS_YEAR_DATE`, Values: `[Total Attendance]` and `[Rolling 7D Avg Attendance]`.
+   - **Right:** Matrix Table — Rows: `YEAR_QUARTER`, Values: `[Total Attendance]`, `[PY Attendance]`, `[YoY Attendance %]`.
+
+At the end, output a short **Desktop Polish Checklist** for wiring the New Card reference labels, sparklines, left-rail Page Navigator, and custom hover tooltip page.
