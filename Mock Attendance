@@ -35,3 +35,42 @@ Paste this into VS Code Copilot Chat (Interactive mode):
  * Start with the user journey: Show how Attendance_USJ answers the 5 core attendance questions at a glance, Detailed Info supports granular checking, and Glossary removes ambiguity around metric definitions.
  * Explain the column triage: Point out that business labels and calendar fields drive the charts while surrogate keys and raw/technical columns stay out of visual axes.
  * Highlight governance & safety: Confirm that shared measures and template structure were preserved, new KPIs live cleanly in their own measure table, and any schema assumptions are flagged for review.
+
+
+
+
+Act as a Senior Power BI Enterprise Architect extending this existing `.pbip` project via the Power BI Authoring MCP Server.
+
+### STRICT GUARDRAILS
+1. **No Computer Use.** Work strictly via MCP and local `.pbip` / TMDL / PBIR files.
+2. **Preserve Baseline:** Do NOT modify or overwrite `Attendance_USJ`, `Detailed Info`, `Glossary`, or any existing measures inside `_Attendance_KPIs` (`Total Attendance`, `Unique Tickets`, `Active Ticket Divisions`, `Average Daily Attendance`, `Attendance Days`).
+3. **PBIR Safety:** Clone valid `visual.json` structures from `Attendance_USJ`, keep `visualContainerObjects` inside each visual object, and avoid complex `filterConfig` or `TopN` JSON blocks.
+
+---
+
+### STEP 1: QUICK DIAGNOSTIC (PAUSE BEFORE BUILDING PAGES)
+1. Inspect why `Active Ticket Divisions` evaluates to `1` on `Attendance_USJ`—check distinct values in `FACT_ATTENDANCE[TICKET_DIVISION_KEY]` vs. `DIM_TICKET_DIVISION_CATEGORY[TICKET_DIVISION_CODE]` and flag any unmatched keys.
+2. Confirm `DIM_FINANCIAL_CALENDAR` is marked as a Date Table on `THIS_YEAR_DATE` and check if `TIME_KEY`, `WEEKEND_FLAG`, `REFUND_SIGN`, and `REVENUE_BRANCH` are populated and ready for analysis.
+
+---
+
+### STEP 2: EXTEND `_Attendance_KPIs` WITH DISPLAY FOLDERS
+Keep the 5 existing measures intact (organize them into folder `01_Core_Attendance`) and add the following new measures inside `_Attendance_KPIs` using safe `DIVIDE()`:
+- **`02_Time_Intelligence`**: `[PY Attendance]` (`SAMEPERIODLASTYEAR` on `THIS_YEAR_DATE`), `[YoY Attendance Variance]`, `[YoY Attendance %]`, `[YTD Attendance]`, `[PY YTD Attendance]`, `[YTD YoY %]`, `[MTD Attendance]`, `[Rolling 7D Avg Attendance]`, `[Peak Daily Attendance]`
+- **`03_Operations_Flow`**: `[Weekend Attendance]` & `[Weekday Attendance]` (using `WEEKEND_FLAG`), `[Weekend Share %]`, `[Peak Entry Hour]` (from `TIME_KEY` if hourly data exists)
+- **`04_Commercial_Mix`**: `[Gross Attendance]`, `[Refunded Attendance]` (using `REFUND_SIGN`), `[Net Attendance]`, `[Refund Rate %]`, `[% of Total Attendance]` (`ALLSELECTED`)
+- **`05_UX_Dynamic_Labels`**: `[YoY Callout Subtext]` (formatted string like `+4.2% vs PY` for KPI cards), `[Dynamic Page Subtitle]`
+- **`06_Future_Phase2_Stubs`** (hidden folder): Add commented/stubbed DAX templates showing how `[Total Attendance]` will act as the denominator for `[Per Capita Spend]` and `[Admissions Yield]` when `FACT_TICKET_SALES` is added later.
+
+Pause after Step 1 & Step 2 so I can click **Apply external changes** in Power BI Desktop and commit to Git.
+
+---
+
+### STEP 3: BUILD 4 NEW BUSINESS-GRADE PAGES (AFTER MY CONFIRMATION)
+Clone the header banner and theme styling from `Attendance_USJ` to create 4 new additive pages:
+1. **`Executive Overview`**: 5 KPI cards with YoY callout context, Monthly CY vs. PY + YoY % Combo Chart, Horizontal Bar by `TICKET_DIVISION_NAME_EN`, and `YEAR_QUARTER` → `YEAR_MONTH` Variance Matrix.
+2. **`Gate Operations`**: Hourly Entry Area Chart (`TIME_KEY`), Day-of-Week × `YEAR_MONTH` Crowd Heatmap Matrix, `WEEKEND_FLAG` / `DAY_DESCRIPTION` comparison column chart, and Ops KPI strip.
+3. **`Commercial Mix`**: Net/Gross/Refund KPIs, 100% Stacked Column of `REVENUE_BRANCH` over `YEAR_MONTH`, and an interactive Decomposition Tree (`REVENUE_BRANCH` → `TICKET_DIVISION_NAME_EN` → `DAY_DESCRIPTION`).
+4. **`Pacing & Trends`**: Daily Attendance + 7-Day Rolling Avg Line Chart, Cumulative YTD CY vs. PY Pacing Curve, and an Operating Day Outlier Table.
+
+At the end, list the exact manual polish steps I should do in Power BI Desktop (slicer sync, conditional formatting scales, and alignment).
