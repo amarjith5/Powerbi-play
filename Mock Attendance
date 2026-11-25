@@ -1,0 +1,37 @@
+Your Attendance_USJ .pbip template already has the blue Universal Studios header, page tabs (Attendance_USJ, Detailed Info, Glossary), and placeholder cards in place across all three pages. Note that I cannot open external share links (share.google/...), so the guidance below covers the end-user executive perspective directly and keeps the template structure intact.
+1. How to Split Wide Tables Across the 3 Pages
+With many columns in FACT_ATTENDANCE, DIM_TICKET_DIVISION_CATEGORY, and your calendar table, split fields by purpose instead of cramming everything onto one screen:
+ * Main Dashboard (Attendance_USJ — Executive & Operational View): Show only the 5 core KPI cards (Total Attendance, Unique Tickets, Active Ticket Divisions, Average Daily Attendance, Attendance Days), calendar period attributes (THIS_YEAR_DATE, YEAR_MONTH, YEAR_QUARTER, YEAR_WEEK_ID, WEEK_END_DATE, WEEKEND_FLAG), and ticket division labels—never raw surrogate keys (DATE_ID, TICKET_DIVISION_KEY) or audit/technical columns.
+ * Detail Page (Detailed Info — Granular Drill-Down): Put full tabular/matrix breakdowns by date, week, year-month, and ticket division attributes so analysts or operations leads can inspect underlying numbers without cluttering the overview.
+ * Glossary Page (Glossary — Definitions & Governance): Document every KPI formula, ticket division rule, calendar period definition (THIS_YEAR_DATE, YEAR_WEEK_ID, WEEK_END_DATE), and refresh/grain note in a clean reference table.
+2. Which "Advanced" Power BI Visuals Are Worth Adding (and Which to Skip)
+Stick to native Power BI visuals (and clean DAX measures) so your .pbip project stays fast, portable, and free of third-party custom visual approval headaches:
+| Visual / Feature | Worth Adding? | Why It Helps End Users & Seniors |
+|---|---|---|
+| New Card Visual + Reference Labels | Yes | Displays the 5 core KPIs cleanly in one container with built-in comparison/target labels instead of separate text boxes. |
+| Line & Clustered Column (Combo Chart) | Yes | Lets users compare attendance volume bars against a trend or rolling average line across YEAR_MONTH or YEAR_WEEK_ID. |
+| Small Multiples | Yes | Repeats the same trend chart across ticket divisions or calendar slices side by side so spikes and drops stand out immediately. |
+| Dynamic DAX + Field Parameters | Yes | Lets users switch metrics or period granularity dynamically using standard Power BI visuals rather than fragile custom JSON tricks. |
+| Scatter / Waterfall / Decomposition Tree | Optional | Use only if you have a clear variance/driver question—keep the landing page focused and put deep explorers on Detailed Info or a dedicated tab. |
+| Heavy R/Python or Unverified Custom Visuals | Skip | Slower rendering, potential corporate/tenant restrictions, and extra maintenance overhead for teammates. |
+3. Safe Setup & VS Code Copilot Prompt
+Before asking Copilot to populate the pages, save a baseline commit in Git (git add . && git commit -m "baseline Attendance_USJ template") and keep existing measures untouched in their own measure table (such as _Attendance_KPIs).
+Paste this into VS Code Copilot Chat (Interactive mode):
+> Do NOT use Computer Use. Preserve the existing header banner, page structure (Attendance_USJ, Detailed Info, Glossary), and existing shared measures.
+> 1. Model & Column Triage:
+> Inspect the semantic model (FACT_ATTENDANCE, DIM_TICKET_DIVISION_CATEGORY, and calendar/date fields). Separate display/analytical columns and calendar fields (THIS_YEAR_DATE, YEAR_MONTH, YEAR_QUARTER, YEAR_WEEK_ID, WEEK_END_DATE, WEEKEND_FLAG) from IDs/keys and technical columns.
+> 2. Build KPIs & Populate All 3 Pages:
+>  * Create or verify DAX measures in a dedicated _Attendance_KPIs table for: Total Attendance, Unique Tickets, Active Ticket Divisions, Average Daily Attendance, and Attendance Days (without overwriting existing shared measures).
+>  * On Attendance_USJ: Wire the 5 KPI cards and add clean native visuals (such as a combo trend chart, breakdown by ticket division, and small multiples or period comparison) while keeping the layout uncluttered.
+>  * On Detailed Info: Add a structured detail matrix/table with key dimension and calendar attributes for granular inspection.
+>  * On Glossary: Populate a clear definitions table explaining each of the 5 KPIs, key calendar/division terms, and reporting grain.
+> 3. Senior & End-User Walkthrough:
+> At the end, provide a clear explanation covering:
+>  * Which columns were prioritized for the dashboard vs. detail vs. glossary (and which IDs/technical columns were excluded).
+>  * How each of the 5 KPIs is calculated and why each visual was chosen for an executive/operational user.
+>  * Any assumptions or items to verify with the team so I can walk seniors and teammates through the result.
+> 
+4. How to Explain It to Seniors & Teammates Afterward
+ * Start with the user journey: Show how Attendance_USJ answers the 5 core attendance questions at a glance, Detailed Info supports granular checking, and Glossary removes ambiguity around metric definitions.
+ * Explain the column triage: Point out that business labels and calendar fields drive the charts while surrogate keys and raw/technical columns stay out of visual axes.
+ * Highlight governance & safety: Confirm that shared measures and template structure were preserved, new KPIs live cleanly in their own measure table, and any schema assumptions are flagged for review.
