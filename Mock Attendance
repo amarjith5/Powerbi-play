@@ -134,3 +134,33 @@ Update `Executive Command Center` to match this exact 4-zone layout (leave ~70px
    - **Right:** Matrix Table — Rows: `YEAR_QUARTER`, Values: `[Total Attendance]`, `[PY Attendance]`, `[YoY Attendance %]`.
 
 At the end, output a short **Desktop Polish Checklist** for wiring the New Card reference labels, sparklines, left-rail Page Navigator, and custom hover tooltip page.
+
+
+
+
+
+
+
+
+
+
+
+
+Act as a Power BI DAX & SVG Visual Engineer using the Power BI Authoring MCP Server.
+
+### GUARDRAILS
+- Do NOT use Computer Use.
+- Do NOT edit any report page or `visual.json` files—ONLY add DAX measures inside `_Attendance_KPIs` so I can wire them safely in Power BI Desktop.
+
+### TASKS
+1. **Dynamic Header Refresh Measure (`05_UX_Visual_Helpers`):**
+   - Create `[Last Refresh Label]` returning a formatted text string of the latest attendance date in `FACT_ATTENDANCE` (e.g., `"Data Through: " & FORMAT(MAX(DIM_FINANCIAL_CALENDAR[THIS_YEAR_DATE]), "dd MMM yyyy")`) for my editable banner card.
+2. **Quarterly Matrix Arrows & Conditional Colors (`05_UX_Visual_Helpers`):**
+   - Update `[YoY Attendance %]` format string to `"▲ +0.0%;▼ -0.0%;0.0%"` (or create `[YoY Attendance % Formatted]` if safer).
+   - Create `[YoY Attendance Color]` returning `"#107C10"` when `[YoY Attendance %] >= 0` and `"#C50F1F"` when `< 0` for conditional font formatting.
+3. **KPI SVG Icon Measures (`06_SVG_Icons`, set Data Category = `ImageUrl`):**
+   - Create clean, flat vector `data:image/svg+xml;utf8,...` DAX measures matching a Navy/Blue/Teal palette for: `[Icon_Attendance]`, `[Icon_Tickets]`, `[Icon_AvgDaily]`, `[Icon_Weekend]`, and `[Icon_NetRate]`.
+4. **KPI SVG Sparkline Measure (`06_SVG_Icons`, set Data Category = `ImageUrl`):**
+   - Create `[Sparkline_Monthly_Attendance]` generating a clean lightweight SVG polyline of `[Total Attendance]` across the last 12 months of `DIM_FINANCIAL_CALENDAR[YEAR_MONTH]` in `#0066B3` with a soft blue area fill.
+
+Pause and confirm all measures compile as `Ready` so I can click **Apply external changes** in Power BI Desktop and commit to Git.
