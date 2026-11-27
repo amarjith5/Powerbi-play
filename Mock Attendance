@@ -164,3 +164,44 @@ Act as a Power BI DAX & SVG Visual Engineer using the Power BI Authoring MCP Ser
    - Create `[Sparkline_Monthly_Attendance]` generating a clean lightweight SVG polyline of `[Total Attendance]` across the last 12 months of `DIM_FINANCIAL_CALENDAR[YEAR_MONTH]` in `#0066B3` with a soft blue area fill.
 
 Pause and confirm all measures compile as `Ready` so I can click **Apply external changes** in Power BI Desktop and commit to Git.
+
+
+
+
+
+
+
+
+
+Act as a Power BI DAX, PBIR Layout & SVG Visual Engineer using the Power BI Authoring MCP Server.
+
+### GUARDRAILS
+- Do NOT use Computer Use.
+- Do NOT delete any existing measures, data visuals, or pages (`Attendance_USJ`, `Detailed Info`, `Glossary`).
+- Restrict report layout (`visual.json`) edits **strictly** to the left sidebar navigation visuals and the top-right banner down-arrow button on the `Executive_Command_Center` page (`Page 4 of 4`).
+- Add all new DAX measures strictly inside `_Attendance_KPIs`.
+
+### PART 1: REPORT LAYOUT FIXES (`Executive_Command_Center`)
+1. **Align Left Sidebar Navigation Icons (Red-marked floating strip -> match Green-marked reference strip):**
+   - Inspect the left-edge sidebar visual(s) and the floating duplicate vertical icon strip (currently positioned around x ≈ 250–300px over the KPI cards).
+   - Remove the duplicate floating sidebar background strip if redundant, or align the interactive icon buttons cleanly onto the left-most navy sidebar (`x` centered on the left sidebar column, uniform `width` and `height` around 28x28px to 32x32px, and evenly spaced `y` coordinates matching the 6 icon positions in the left green-marked strip).
+   - Ensure higher `z` index (`tabOrder` / layer order) than the sidebar background image so all icons remain clickable and cleanly aligned vertically.
+
+2. **Move & Resize Top-Right Banner Down-Arrow Button:**
+   - Locate the large outlined down-arrow shape/button currently sitting below the top banner (above the `Net Attendance Rate %` KPI card).
+   - Move it inside the **top-right corner** of the top blue header banner (`y` vertically centered within the banner height, `x` flush near the right edge of the banner with ~12–16px right padding).
+   - Resize it to a compact header-control size (e.g., `width: 28` to `34`, `height: 28` to `34`) so it fits cleanly inside the right end of the banner without overlapping the castle artwork or extending below the banner edge, and set its `z` layer above the banner image.
+
+### PART 2: DAX & SVG MEASURES (`_Attendance_KPIs`)
+1. **Dynamic Header Refresh Measure (`05_UX_Visual_Helpers`):**
+   - Create `[Last Refresh Label]` returning a formatted text string of the latest attendance date in `FACT_ATTENDANCE` (e.g., `"Data Through: " & FORMAT(MAX(DIM_FINANCIAL_CALENDAR[THIS_YEAR_DATE]), "dd MMM yyyy")`) for my editable banner card.
+2. **Quarterly Matrix Arrows & Conditional Colors (`05_UX_Visual_Helpers`):**
+   - Update `[YoY Attendance %]` format string to `"▲ +0.0%;▼ -0.0%;0.0%"` (or create `[YoY Attendance % Formatted]` if safer).
+   - Create `[YoY Attendance Color]` returning `"#107C10"` when `[YoY Attendance %] >= 0` and `"#C50F1F"` when `< 0` for conditional font formatting.
+3. **KPI SVG Icon Measures (`06_SVG_Icons`, set Data Category = `ImageUrl`):**
+   - Create clean, flat vector `data:image/svg+xml;utf8,...` DAX measures matching a Navy/Blue/Teal palette for: `[Icon_Attendance]`, `[Icon_Tickets]`, `[Icon_AvgDaily]`, `[Icon_Weekend]`, and `[Icon_NetRate]`.
+4. **KPI SVG Sparkline Measure (`06_SVG_Icons`, set Data Category = `ImageUrl`):**
+   - Create `[Sparkline_Monthly_Attendance]` generating a clean lightweight SVG polyline of `[Total Attendance]` across the last 12 months of `DIM_FINANCIAL_CALENDAR[YEAR_MONTH]` in `#0066B3` with a soft blue area fill.
+
+Pause and confirm all measures compile as `Ready` and list the exact `visual.json` changes made so I can click **Apply external changes** in Power BI.
+
